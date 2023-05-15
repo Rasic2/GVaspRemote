@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
 SrcDir=`realpath $0 | xargs dirname`
-source $SrcDir/color.sh
+KeysDir=${SrcDir}/keys
 
+source $SrcDir/color.sh
+source $SrcDir/utils.sh
+
+# Parse Args
 gvasp_command=""
 key_flag=0
 remote_file=""
@@ -19,10 +23,25 @@ do
 	fi
 done
 
+# Locate identify files
 ip=`echo ${remote_file} | awk -F_ '{print $1}'`
 user=`echo ${remote_file} | awk -F_ '{print $2}'`
-ssh_identify=${SrcDir}/keys/${ip}_${user}
 
+check_ip $ip
+if [ $IPFLAG -eq 0 ];then
+	ip=`grep $ip ${KeysDir}/config 2>/dev/null | awk '{print $2}'`
+	check_ip $ip
+	if [ $IPFLAG -eq 0 ];then
+		echo
+		echo -e "${RED}  !!!! Error: The key format is not right!${RESET}"
+		echo
+		exit
+	fi
+fi
+
+ssh_identify=${KeysDir}/${ip}_${user}
+
+# Start Process
 echo
 echo -e "----------------->${RED} GVasp Remote Process Tool ${RESET}<---------------------"
 echo
