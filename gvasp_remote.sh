@@ -26,10 +26,12 @@ done
 # Locate identify files
 ip=`echo ${remote_file} | awk -F_ '{print $1}'`
 user=`echo ${remote_file} | awk -F_ '{print $2}'`
+port=22
 
 check_ip $ip
 if [ $IPFLAG -eq 0 ];then
 	ip=`grep $ip ${KeysDir}/config 2>/dev/null | awk '{print $2}'`
+	port=`grep $ip ${KeysDir}/config 2>/dev/null | awk '{print $3}'`
 	check_ip $ip
 	if [ $IPFLAG -eq 0 ];then
 		echo
@@ -40,15 +42,16 @@ if [ $IPFLAG -eq 0 ];then
 fi
 
 ssh_identify=${KeysDir}/${ip}_${user}
+host=${ip}:${port}
 
 # Start Process
 echo
-echo -e "----------------->${RED} GVasp Remote Process Tool ${RESET}<---------------------"
+echo -e "----------------->${RED} GVasp Remote Process Tool ${RESET}<-------------------------"
 echo
-echo -e "+-----------------------+-----------------------------------------+"
-printf  "|${RED}  input command       ${RESET} | ${GREEN} %20s                  ${RESET} |\n" "$gvasp_command"
-printf  "|${RED}  remote host         ${RESET} | ${GREEN} %12s (IP) %12s (USER) ${RESET} |\n" "$ip" "$user"
-echo -e "+-----------------------+-----------------------------------------+"
+echo -e "+-----------------------+---------------------------------------------+"
+printf  "|${RED}  input command       ${RESET} | ${GREEN} %24s                  ${RESET} |\n" "$gvasp_command"
+printf  "|${RED}  remote host         ${RESET} | ${GREEN} %18s (Host) %8s (USER) ${RESET} |\n" "$host" "$user"
+echo -e "+-----------------------+---------------------------------------------+"
 
 WorkDir=`pwd`
 DirRemoveHOME=${WorkDir//$HOME}
@@ -61,18 +64,18 @@ echo -e "${BOLD}<---# End GVasp output${RESET}"
 echo
 
 echo -e "${BOLD}#---> Mapping Directory:${RESET} ${BLUE}\$HOME${DirRemoveHOME}${RESET}"
-ssh $user@$ip -i ${ssh_identify} "echo \${HOME}${DirRemoveHOME} > ~/.gvasp_remote; mkdir -p \${HOME}${DirRemoveHOME};"
-scp -i ${ssh_identify} $user@$ip:~/.gvasp_remote . > /dev/null
+ssh $user@$ip -i ${ssh_identify} -p $port -o PubkeyAcceptedKeyTypes=+ssh-dss "echo \${HOME}${DirRemoveHOME} > ~/.gvasp_remote; mkdir -p \${HOME}${DirRemoveHOME};"
+scp -i ${ssh_identify} -P $port -o PubkeyAcceptedKeyTypes=+ssh-dss $user@$ip:~/.gvasp_remote . > /dev/null
 target_directory=`cat .gvasp_remote`
 rm -rf .gvasp_remote
 
 echo
 echo -e "${BOLD}#---> Transfer files${RESET}"
 echo
-scp -i ${ssh_identify} ./* $user@$ip:$target_directory
+scp -i ${ssh_identify} -P $port -o PubkeyAcceptedKeyTypes=+ssh-dss ./* $user@$ip:$target_directory
 echo
 echo -e "${BOLD}<---# End Transfer files${RESET}"
 
-ssh -i ${ssh_identify} $user@$ip "rm -rf ~/.gvasp_remote;"
+ssh -i ${ssh_identify} -p $port -o PubkeyAcceptedKeyTypes=+ssh-dss $user@$ip "rm -rf ~/.gvasp_remote;"
 echo
 
