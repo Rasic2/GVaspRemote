@@ -41,7 +41,9 @@ if [ $IPFLAG -eq 0 ];then
 	fi
 fi
 
-ssh_identify=${KeysDir}/${ip}_${user}
+default_args=(-i ${KeysDir}/${ip}_${user} -o PubkeyAcceptedKeyTypes=+ssh-dss)
+ssh_args=("${default_args[@]}" -p $port $user@$ip)
+scp_args=("${default_args[@]}" -P $port)
 host=${ip}:${port}
 
 # Start Process
@@ -64,18 +66,18 @@ echo -e "${BOLD}<---# End GVasp output${RESET}"
 echo
 
 echo -e "${BOLD}#---> Mapping Directory:${RESET} ${BLUE}\$HOME${DirRemoveHOME}${RESET}"
-ssh $user@$ip -i ${ssh_identify} -p $port -o PubkeyAcceptedKeyTypes=+ssh-dss "echo \${HOME}${DirRemoveHOME} > ~/.gvasp_remote; mkdir -p \${HOME}${DirRemoveHOME};"
-scp -i ${ssh_identify} -P $port -o PubkeyAcceptedKeyTypes=+ssh-dss $user@$ip:~/.gvasp_remote . > /dev/null
+ssh ${ssh_args[@]} "echo \${HOME}${DirRemoveHOME} > ~/.gvasp_remote; mkdir -p \${HOME}${DirRemoveHOME};"
+scp ${scp_args[@]} $user@$ip:~/.gvasp_remote . > /dev/null
 target_directory=`cat .gvasp_remote`
 rm -rf .gvasp_remote
 
 echo
 echo -e "${BOLD}#---> Transfer files${RESET}"
 echo
-scp -i ${ssh_identify} -P $port -o PubkeyAcceptedKeyTypes=+ssh-dss ./* $user@$ip:$target_directory
+scp ${scp_args[@]} ./* $user@$ip:$target_directory
 echo
 echo -e "${BOLD}<---# End Transfer files${RESET}"
 
-ssh -i ${ssh_identify} -p $port -o PubkeyAcceptedKeyTypes=+ssh-dss $user@$ip "rm -rf ~/.gvasp_remote;"
+ssh ${ssh_args[@]} "rm -rf ~/.gvasp_remote;"
 echo
 
